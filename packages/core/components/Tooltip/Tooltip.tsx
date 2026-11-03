@@ -56,7 +56,7 @@ const TooltipRenderer = (
   useEffect(() => cancelTimer, []);
 
   const scheduleShow = () => {
-    if (dismissed.current || show) return;
+    if (dismissed.current) return;
     cancelTimer();
     timer.current = window.setTimeout(() => {
       timer.current = undefined;
@@ -98,7 +98,7 @@ const TooltipRenderer = (
       }}
       onBlur={event => {
         rest.onBlur?.(event);
-        if (event.currentTarget.contains(event.relatedTarget)) return;
+        if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
         focused.current = false;
         hideIfInactive();
       }}
