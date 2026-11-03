@@ -72,7 +72,7 @@ export const Simple: Story = {
 
     await expect(tip).toHaveTextContent(text);
     await expect(tip).not.toBeVisible();
-    await expect(tooltip).toHaveAttribute('aria-describedby', tip.id);
+    await waitFor(() => expect(tooltip).toHaveAttribute('aria-describedby', tip.id));
 
     await userEvent.hover(target);
     await expect(tip).not.toBeVisible();
