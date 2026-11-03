@@ -117,4 +117,3 @@ const TooltipRenderer = (
 };
 
 export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(TooltipRenderer);
-
