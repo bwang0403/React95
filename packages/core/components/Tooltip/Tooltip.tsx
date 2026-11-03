@@ -76,11 +76,7 @@ const TooltipRenderer = (
       {...rest}
       className={cn(wrapper, rest.className)}
       tabIndex={rest.tabIndex ?? 0}
-      aria-describedby={
-        show
-          ? [rest['aria-describedby'], tooltipId].filter(Boolean).join(' ')
-          : rest['aria-describedby']
-      }
+      aria-describedby={[rest['aria-describedby'], tooltipId].filter(Boolean).join(' ')}
       onMouseEnter={event => {
         rest.onMouseEnter?.(event);
         hovered.current = true;
@@ -112,11 +108,9 @@ const TooltipRenderer = (
       }}
       ref={ref}
     >
-      {show && (
-        <div id={tooltipId} role="tooltip" className={tip}>
-          {text}
-        </div>
-      )}
+      <div id={tooltipId} role="tooltip" className={tip} hidden={!show}>
+        {text}
+      </div>
       {children}
     </div>
   );
