@@ -1,8 +1,10 @@
-import { forwardRef, useEffect, useId, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import type { HTMLAttributes, Ref } from 'react';
 import cn from 'classnames';
 
 import { tip, wrapper } from './Tooltip.css';
+
+let tooltipIdCounter = 0;
 
 function formatDate(date: Date): string {
   const monthNames = [
@@ -42,7 +44,7 @@ const TooltipRenderer = (
   ref: Ref<HTMLDivElement>,
 ) => {
   const [show, setShow] = useState(false);
-  const tooltipId = useId();
+  const [tooltipId, setTooltipId] = useState<string>();
   const timer = useRef<number | undefined>();
   const hovered = useRef(false);
   const focused = useRef(false);
@@ -53,7 +55,10 @@ const TooltipRenderer = (
     timer.current = undefined;
   };
 
-  useEffect(() => cancelTimer, []);
+  useEffect(() => {
+    setTooltipId(`react95-tooltip-${++tooltipIdCounter}`);
+    return cancelTimer;
+  }, []);
 
   const scheduleShow = () => {
     if (dismissed.current) return;
@@ -76,7 +81,11 @@ const TooltipRenderer = (
       {...rest}
       className={cn(wrapper, rest.className)}
       tabIndex={rest.tabIndex ?? 0}
-      aria-describedby={[rest['aria-describedby'], tooltipId].filter(Boolean).join(' ')}
+      aria-describedby={
+        tooltipId
+          ? [rest['aria-describedby'], tooltipId].filter(Boolean).join(' ')
+          : rest['aria-describedby']
+      }
       onMouseEnter={event => {
         rest.onMouseEnter?.(event);
         hovered.current = true;
