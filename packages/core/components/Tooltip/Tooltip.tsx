@@ -1,8 +1,10 @@
-import { useState, forwardRef } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import type { HTMLAttributes, Ref } from 'react';
 import cn from 'classnames';
 
 import { tip, wrapper } from './Tooltip.css';
+
+let tooltipIdCounter = 0;
 
 function formatDate(date: Date): string {
   const monthNames = [
@@ -42,18 +44,35 @@ const TooltipRenderer = (
   ref: Ref<HTMLDivElement>,
 ) => {
   const [show, setShow] = useState(false);
-  const [delayTimer, setDelayTimer] = useState(0);
+  const [tooltipId, setTooltipId] = useState<string>();
+  const timer = useRef<number | undefined>();
+  const hovered = useRef(false);
+  const focused = useRef(false);
+  const dismissed = useRef(false);
 
-  const handleEnter = () => {
-    const timer = window.setTimeout(() => {
-      setShow(true);
-    }, delay);
-
-    setDelayTimer(timer);
+  const cancelTimer = () => {
+    window.clearTimeout(timer.current);
+    timer.current = undefined;
   };
 
-  const handleLeave = () => {
-    clearTimeout(delayTimer);
+  useEffect(() => {
+    setTooltipId(`react95-tooltip-${++tooltipIdCounter}`);
+    return cancelTimer;
+  }, []);
+
+  const scheduleShow = () => {
+    if (dismissed.current) return;
+    cancelTimer();
+    timer.current = window.setTimeout(() => {
+      timer.current = undefined;
+      setShow(true);
+    }, delay);
+  };
+
+  const hideIfInactive = () => {
+    if (hovered.current || focused.current) return;
+    cancelTimer();
+    dismissed.current = false;
     setShow(false);
   };
 
@@ -61,16 +80,49 @@ const TooltipRenderer = (
     <div
       {...rest}
       className={cn(wrapper, rest.className)}
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
+      tabIndex={rest.tabIndex ?? 0}
+      aria-describedby={
+        tooltipId
+          ? [rest['aria-describedby'], tooltipId].filter(Boolean).join(' ')
+          : rest['aria-describedby']
+      }
+      onMouseEnter={event => {
+        rest.onMouseEnter?.(event);
+        hovered.current = true;
+        scheduleShow();
+      }}
+      onMouseLeave={event => {
+        rest.onMouseLeave?.(event);
+        hovered.current = false;
+        hideIfInactive();
+      }}
+      onFocus={event => {
+        rest.onFocus?.(event);
+        focused.current = true;
+        scheduleShow();
+      }}
+      onBlur={event => {
+        rest.onBlur?.(event);
+        if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+        focused.current = false;
+        hideIfInactive();
+      }}
+      onKeyDown={event => {
+        rest.onKeyDown?.(event);
+        if (event.key === 'Escape') {
+          cancelTimer();
+          dismissed.current = true;
+          setShow(false);
+        }
+      }}
       ref={ref}
     >
-      {show && <div className={tip}>{text}</div>}
+      <div id={tooltipId} role="tooltip" className={tip} hidden={!show}>
+        {text}
+      </div>
       {children}
     </div>
   );
 };
 
-export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(
-  TooltipRenderer,
-);
+export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(TooltipRenderer);
