@@ -68,48 +68,49 @@ export const Simple: Story = {
     const tooltip = target.parentElement as HTMLElement;
     const delay = args.delay!;
     const text = args.text!;
+    const tip = canvas.getByRole('tooltip', { hidden: true });
 
-    await expect(tooltip).not.toHaveTextContent(text);
-
-    await userEvent.hover(target);
-    await expect(tooltip).not.toHaveTextContent(text);
-    await waitFor(() => expect(tooltip).toHaveTextContent(text), {
-      timeout: delay * 2,
-    });
-
-    await userEvent.unhover(target);
-    await waitFor(() => expect(tooltip).not.toHaveTextContent(text));
-
-    await userEvent.hover(target);
-    await userEvent.unhover(target);
-    await new Promise(resolve => setTimeout(resolve, delay * 1.5));
-    await expect(tooltip).not.toHaveTextContent(text);
-
-    tooltip.focus();
-    await expect(tooltip).not.toHaveTextContent(text);
-    await waitFor(() => expect(canvas.getByRole('tooltip')).toHaveTextContent(text), {
-      timeout: delay * 2,
-    });
-
-    const tip = canvas.getByRole('tooltip');
+    await expect(tip).toHaveTextContent(text);
+    await expect(tip).not.toBeVisible();
     await expect(tooltip).toHaveAttribute('aria-describedby', tip.id);
 
+    await userEvent.hover(target);
+    await expect(tip).not.toBeVisible();
+    await waitFor(() => expect(tip).toBeVisible(), {
+      timeout: delay * 2,
+    });
+
+    await userEvent.unhover(target);
+    await waitFor(() => expect(tip).not.toBeVisible());
+
+    await userEvent.hover(target);
+    await userEvent.unhover(target);
+    await new Promise(resolve => setTimeout(resolve, delay * 1.5));
+    await expect(tip).not.toBeVisible();
+
+    tooltip.focus();
+    await expect(tooltip).toHaveAttribute('aria-describedby', tip.id);
+    await expect(tip).not.toBeVisible();
+    await waitFor(() => expect(tip).toBeVisible(), {
+      timeout: delay * 2,
+    });
+
     await userEvent.keyboard('{Escape}');
-    await waitFor(() => expect(canvas.queryByRole('tooltip')).not.toBeInTheDocument());
-    await expect(tooltip).not.toHaveAttribute('aria-describedby');
+    await waitFor(() => expect(tip).not.toBeVisible());
+    await expect(tooltip).toHaveAttribute('aria-describedby', tip.id);
 
     tooltip.blur();
     tooltip.focus();
-    await waitFor(() => expect(canvas.getByRole('tooltip')).toHaveTextContent(text), {
+    await waitFor(() => expect(tip).toBeVisible(), {
       timeout: delay * 2,
     });
     tooltip.blur();
-    await waitFor(() => expect(canvas.queryByRole('tooltip')).not.toBeInTheDocument());
+    await waitFor(() => expect(tip).not.toBeVisible());
 
     tooltip.focus();
     tooltip.blur();
     await new Promise(resolve => setTimeout(resolve, delay * 1.5));
-    await expect(canvas.queryByRole('tooltip')).not.toBeInTheDocument();
+    await expect(tip).not.toBeVisible();
   },
 
   parameters: {
