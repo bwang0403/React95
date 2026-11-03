@@ -7,6 +7,14 @@ export default {
   title: 'Tooltip',
   component: Tooltip,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'The wrapper is keyboard-focusable by default. If its child already has a tab stop, pass `tabIndex={-1}` to avoid an extra one.',
+      },
+    },
+  },
   argTypes: {
     delay: {
       control: { type: 'number', step: 100 },
@@ -57,31 +65,51 @@ export const Simple: Story = {
   },
   play: async ({ args, canvas, userEvent }) => {
     const target = canvas.getByText('Hover me');
-    const tooltip = target.parentElement;
+    const tooltip = target.parentElement as HTMLElement;
     const delay = args.delay!;
     const text = args.text!;
 
     await expect(tooltip).not.toHaveTextContent(text);
 
-    // the tip shows only after `delay`, while the pointer stays on it
     await userEvent.hover(target);
-
     await expect(tooltip).not.toHaveTextContent(text);
     await waitFor(() => expect(tooltip).toHaveTextContent(text), {
       timeout: delay * 2,
     });
 
-    // leaving hides it
     await userEvent.unhover(target);
+    await waitFor(() => expect(tooltip).not.toHaveTextContent(text));
 
-    await expect(tooltip).not.toHaveTextContent(text);
-
-    // and leaving before `delay` cancels it
     await userEvent.hover(target);
     await userEvent.unhover(target);
     await new Promise(resolve => setTimeout(resolve, delay * 1.5));
-
     await expect(tooltip).not.toHaveTextContent(text);
+
+    tooltip.focus();
+    await expect(tooltip).not.toHaveTextContent(text);
+    await waitFor(() => expect(canvas.getByRole('tooltip')).toHaveTextContent(text), {
+      timeout: delay * 2,
+    });
+
+    const tip = canvas.getByRole('tooltip');
+    await expect(tooltip).toHaveAttribute('aria-describedby', tip.id);
+
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(canvas.queryByRole('tooltip')).not.toBeInTheDocument());
+    await expect(tooltip).not.toHaveAttribute('aria-describedby');
+
+    tooltip.blur();
+    tooltip.focus();
+    await waitFor(() => expect(canvas.getByRole('tooltip')).toHaveTextContent(text), {
+      timeout: delay * 2,
+    });
+    tooltip.blur();
+    await waitFor(() => expect(canvas.queryByRole('tooltip')).not.toBeInTheDocument());
+
+    tooltip.focus();
+    tooltip.blur();
+    await new Promise(resolve => setTimeout(resolve, delay * 1.5));
+    await expect(canvas.queryByRole('tooltip')).not.toBeInTheDocument();
   },
 
   parameters: {
@@ -91,3 +119,4 @@ export const Simple: Story = {
     },
   },
 };
+
